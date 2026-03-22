@@ -1,0 +1,776 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CineVault – Your Movie Universe</title>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:ital,wght@0,300;0,400;0,500;0,600;1,400&family=Space+Mono&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #08090f;
+  --surface: #0e1117;
+  --surface2: #161b25;
+  --surface3: #1c2333;
+  --gold: #f0c040;
+  --gold2: #ffd96a;
+  --red: #e85555;
+  --green: #4ade80;
+  --text: #e6eaf2;
+  --muted: #6a7590;
+  --border: #1e2740;
+  --radius: 14px;
+}
+* { margin: 0; padding: 0; box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; overflow-x: hidden; }
+
+/* ── SCROLLBAR ── */
+::-webkit-scrollbar { width: 5px; }
+::-webkit-scrollbar-track { background: var(--bg); }
+::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+
+/* ── ANIMATIONS ── */
+@keyframes fadeUp { from { opacity: 0; transform: translateY(18px); } to { opacity: 1; transform: translateY(0); } }
+@keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+@keyframes spin { to { transform: rotate(360deg); } }
+@keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: .5; } }
+
+/* ── AUTH SCREEN ── */
+#auth-screen {
+  position: fixed; inset: 0; z-index: 1000;
+  background: radial-gradient(ellipse at 25% 40%, #0c1828 0%, #08090f 65%);
+  display: flex; align-items: center; justify-content: center; padding: 20px;
+  transition: opacity .45s ease, visibility .45s ease;
+}
+#auth-screen.gone { opacity: 0; visibility: hidden; pointer-events: none; }
+
+.auth-box {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 22px;
+  padding: 46px 42px;
+  width: 420px; max-width: 100%;
+  box-shadow: 0 0 100px rgba(0,0,0,.7), 0 0 50px rgba(240,192,64,.06);
+  animation: fadeUp .5s ease;
+}
+.auth-logo {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 44px; letter-spacing: 3px;
+  color: var(--gold); text-align: center; margin-bottom: 4px;
+  text-shadow: 0 0 40px rgba(240,192,64,.35);
+}
+.auth-sub { text-align: center; color: var(--muted); font-size: 12px; letter-spacing: 2.5px; text-transform: uppercase; margin-bottom: 34px; }
+.auth-tabs { display: flex; background: var(--bg); border-radius: 10px; padding: 4px; margin-bottom: 26px; gap: 4px; }
+.auth-tab { flex: 1; padding: 9px; background: none; border: none; border-radius: 8px; color: var(--muted); font-family: 'DM Sans', sans-serif; font-size: 14px; font-weight: 500; cursor: pointer; transition: all .2s; }
+.auth-tab.on { background: var(--surface2); color: var(--gold); }
+.fg { margin-bottom: 16px; }
+.fg label { display: block; font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: 1.5px; margin-bottom: 7px; }
+.fg input { width: 100%; padding: 13px 16px; background: var(--bg); border: 1px solid var(--border); border-radius: 10px; color: var(--text); font-family: 'DM Sans', sans-serif; font-size: 15px; outline: none; transition: border .2s; }
+.fg input:focus { border-color: var(--gold); }
+.btn-gold { width: 100%; padding: 14px; background: linear-gradient(135deg, var(--gold), var(--gold2)); border: none; border-radius: 10px; font-family: 'DM Sans', sans-serif; font-size: 15px; font-weight: 600; color: #000; cursor: pointer; transition: all .2s; margin-top: 4px; }
+.btn-gold:hover { transform: translateY(-1px); box-shadow: 0 8px 28px rgba(240,192,64,.3); }
+.btn-gold:disabled { opacity: .6; cursor: not-allowed; transform: none; }
+.auth-msg { text-align: center; font-size: 13px; color: var(--red); margin-top: 10px; min-height: 18px; }
+.auth-msg.ok { color: var(--green); }
+.demo-hint { text-align: center; margin-top: 14px; font-size: 12px; color: var(--muted); }
+.demo-hint b { color: var(--text); }
+
+/* ── APP ── */
+#app { display: none; animation: fadeIn .4s ease; }
+#app.on { display: block; }
+
+/* ── HEADER ── */
+.hdr {
+  position: sticky; top: 0; z-index: 200;
+  background: rgba(8,9,15,.93); backdrop-filter: blur(24px);
+  border-bottom: 1px solid var(--border);
+  height: 62px; padding: 0 28px;
+  display: flex; align-items: center; justify-content: space-between;
+}
+.hdr-logo { font-family: 'Bebas Neue', sans-serif; font-size: 26px; letter-spacing: 2px; color: var(--gold); cursor: pointer; }
+.hdr-logo span { color: var(--text); }
+.hdr-right { display: flex; align-items: center; gap: 14px; }
+.user-pill { display: flex; align-items: center; gap: 9px; background: var(--surface2); border: 1px solid var(--border); border-radius: 50px; padding: 5px 14px 5px 6px; }
+.user-av { width: 28px; height: 28px; border-radius: 50%; background: linear-gradient(135deg, var(--gold), #b8870a); display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 700; color: #000; flex-shrink: 0; }
+.user-name { font-size: 14px; font-weight: 500; }
+.btn-logout { background: none; border: 1px solid var(--border); color: var(--muted); font-family: 'DM Sans', sans-serif; font-size: 13px; padding: 6px 13px; border-radius: 8px; cursor: pointer; transition: all .2s; }
+.btn-logout:hover { border-color: var(--red); color: var(--red); }
+
+/* ── HERO ── */
+.hero {
+  background: linear-gradient(180deg, #0c1828 0%, var(--bg) 100%);
+  padding: 58px 28px 48px; text-align: center; position: relative; overflow: hidden;
+}
+.hero::before { content: ''; position: absolute; top: -60px; left: 50%; transform: translateX(-50%); width: 700px; height: 500px; background: radial-gradient(ellipse, rgba(240,192,64,.05), transparent 65%); pointer-events: none; }
+.hero h1 { font-family: 'Bebas Neue', sans-serif; font-size: clamp(34px,6vw,70px); letter-spacing: 3px; line-height: 1; margin-bottom: 10px; }
+.hero h1 span { color: var(--gold); }
+.hero p { color: var(--muted); font-size: 15px; margin-bottom: 30px; }
+.sbar { display: flex; max-width: 580px; margin: 0 auto; background: var(--surface); border: 1px solid var(--border); border-radius: 13px; overflow: hidden; transition: border .2s, box-shadow .2s; }
+.sbar:focus-within { border-color: rgba(240,192,64,.5); box-shadow: 0 0 0 3px rgba(240,192,64,.08); }
+.sbar input { flex: 1; padding: 15px 18px; background: none; border: none; color: var(--text); font-family: 'DM Sans', sans-serif; font-size: 15px; outline: none; }
+.sbar input::placeholder { color: var(--muted); }
+.sbar button { padding: 0 22px; background: var(--gold); border: none; color: #000; font-family: 'DM Sans', sans-serif; font-size: 14px; font-weight: 600; cursor: pointer; white-space: nowrap; transition: background .2s; }
+.sbar button:hover { background: var(--gold2); }
+.quick-tags { margin-top: 14px; display: flex; gap: 7px; justify-content: center; flex-wrap: wrap; }
+.qtag { padding: 4px 13px; background: var(--surface); border: 1px solid var(--border); border-radius: 50px; font-size: 12px; color: var(--muted); cursor: pointer; transition: all .2s; }
+.qtag:hover { border-color: var(--gold); color: var(--gold); }
+
+/* ── STATS BAR ── */
+.stats-bar { display: flex; gap: 0; background: var(--surface); border-bottom: 1px solid var(--border); }
+.stat-item { flex: 1; text-align: center; padding: 14px 10px; border-right: 1px solid var(--border); }
+.stat-item:last-child { border-right: none; }
+.stat-num { font-family: 'Bebas Neue', sans-serif; font-size: 24px; letter-spacing: 1px; color: var(--gold); }
+.stat-label { font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: 1px; margin-top: 2px; }
+
+/* ── TABS ── */
+.nav-tabs { display: flex; padding: 0 28px; border-bottom: 1px solid var(--border); background: var(--bg); }
+.ntab { padding: 14px 22px; background: none; border: none; border-bottom: 2px solid transparent; color: var(--muted); font-family: 'DM Sans', sans-serif; font-size: 14px; font-weight: 500; cursor: pointer; transition: all .2s; margin-bottom: -1px; }
+.ntab.on { color: var(--gold); border-bottom-color: var(--gold); }
+.ntab:hover:not(.on) { color: var(--text); }
+
+/* ── CONTENT ── */
+.content { padding: 28px; max-width: 1400px; margin: 0 auto; }
+.sec-title { font-family: 'Bebas Neue', sans-serif; font-size: 20px; letter-spacing: 2px; margin-bottom: 22px; display: flex; align-items: center; gap: 10px; }
+.sec-title::after { content: ''; flex: 1; height: 1px; background: linear-gradient(90deg, var(--border), transparent); }
+.tc { display: none; }
+.tc.on { display: block; }
+
+/* ── LOADING / EMPTY ── */
+.loader-wrap { display: flex; justify-content: center; padding: 80px; }
+.spinner { width: 36px; height: 36px; border: 3px solid var(--border); border-top-color: var(--gold); border-radius: 50%; animation: spin .7s linear infinite; }
+.empty-state { text-align: center; padding: 70px 20px; color: var(--muted); }
+.empty-icon { font-size: 48px; margin-bottom: 14px; }
+.empty-state h3 { font-family: 'Bebas Neue', sans-serif; font-size: 22px; letter-spacing: 2px; color: var(--text); margin-bottom: 8px; }
+.res-info { font-size: 13px; color: var(--muted); margin-bottom: 18px; font-family: 'Space Mono', monospace; }
+.res-info b { color: var(--gold); }
+
+/* ── PAGINATION ── */
+.pagination { display: flex; justify-content: center; gap: 8px; margin-top: 28px; flex-wrap: wrap; }
+.page-btn { padding: 7px 14px; background: var(--surface); border: 1px solid var(--border); border-radius: 8px; color: var(--muted); font-family: 'Space Mono', monospace; font-size: 13px; cursor: pointer; transition: all .2s; }
+.page-btn:hover, .page-btn.active { background: rgba(240,192,64,.1); border-color: rgba(240,192,64,.4); color: var(--gold); }
+.page-btn:disabled { opacity: .4; cursor: not-allowed; }
+
+/* ── MOVIE GRID ── */
+.mgrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(168px,1fr)); gap: 18px; }
+.mcard { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; position: relative; transition: all .25s; animation: fadeUp .4s ease both; }
+.mcard:hover { transform: translateY(-5px); border-color: rgba(240,192,64,.25); box-shadow: 0 14px 38px rgba(0,0,0,.5); }
+.mposter-wrap { position: relative; }
+.mposter { width: 100%; aspect-ratio: 2/3; object-fit: cover; display: block; background: var(--surface2); }
+.no-poster { width: 100%; aspect-ratio: 2/3; background: linear-gradient(135deg, var(--surface2), #151f30); display: flex; flex-direction: column; align-items: center; justify-content: center; color: var(--muted); font-size: 30px; gap: 5px; }
+.no-poster small { font-size: 10px; }
+.saved-badge { position: absolute; top: 7px; right: 7px; background: var(--gold); color: #000; font-size: 9px; font-weight: 700; padding: 2px 7px; border-radius: 50px; letter-spacing: .5px; }
+.cbody { padding: 12px; }
+.ctitle { font-size: 13px; font-weight: 600; margin-bottom: 3px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.cyear { font-size: 11px; color: var(--muted); margin-bottom: 9px; font-family: 'Space Mono', monospace; }
+.cstars { display: flex; gap: 2px; margin-bottom: 9px; }
+.star { font-size: 15px; cursor: pointer; color: var(--muted); transition: color .12s, transform .12s; user-select: none; line-height: 1; }
+.star:hover, .star.lit { color: var(--gold); transform: scale(1.2); }
+.cbtns { display: flex; gap: 5px; }
+.cb-save, .cb-rm, .cb-info { flex: 1; padding: 6px 0; border: none; border-radius: 7px; font-family: 'DM Sans', sans-serif; font-size: 11px; font-weight: 600; cursor: pointer; transition: all .2s; }
+.cb-save { background: rgba(240,192,64,.1); color: var(--gold); border: 1px solid rgba(240,192,64,.2); }
+.cb-save:hover { background: var(--gold); color: #000; }
+.cb-rm { background: rgba(232,85,85,.1); color: var(--red); border: 1px solid rgba(232,85,85,.2); }
+.cb-rm:hover { background: var(--red); color: #fff; }
+.cb-info { background: var(--surface2); color: var(--muted); border: 1px solid var(--border); }
+.cb-info:hover { color: var(--text); }
+
+/* ── WATCHLIST LIST ── */
+.wl-item { display: flex; align-items: center; gap: 14px; background: var(--surface); border: 1px solid var(--border); border-radius: 11px; padding: 12px; margin-bottom: 8px; animation: fadeUp .3s ease; transition: border .2s; }
+.wl-item:hover { border-color: rgba(240,192,64,.15); }
+.wl-thumb { width: 42px; height: 60px; object-fit: cover; border-radius: 6px; flex-shrink: 0; background: var(--surface2); display: block; }
+.wl-no-img { width: 42px; height: 60px; flex-shrink: 0; background: var(--surface2); border-radius: 6px; display: flex; align-items: center; justify-content: center; font-size: 16px; }
+.wl-info { flex: 1; min-width: 0; }
+.wl-title { font-size: 14px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.wl-year { font-size: 12px; color: var(--muted); margin-top: 2px; }
+.wl-rating { font-size: 12px; color: var(--gold); margin-top: 4px; }
+.wl-btns { display: flex; gap: 7px; flex-shrink: 0; }
+.wl-btns button { padding: 6px 11px; border-radius: 7px; cursor: pointer; font-family: 'DM Sans', sans-serif; font-size: 12px; font-weight: 500; transition: all .2s; }
+.btn-info-sm { background: var(--surface2); border: 1px solid var(--border); color: var(--muted); }
+.btn-info-sm:hover { color: var(--text); }
+.btn-rm-sm { background: rgba(232,85,85,.1); border: 1px solid rgba(232,85,85,.2); color: var(--red); }
+.btn-rm-sm:hover { background: var(--red); color: #fff; }
+
+/* ── MODAL ── */
+.modal-ov { position: fixed; inset: 0; background: rgba(0,0,0,.88); backdrop-filter: blur(10px); z-index: 500; display: flex; align-items: center; justify-content: center; padding: 20px; opacity: 0; visibility: hidden; transition: all .3s; }
+.modal-ov.open { opacity: 1; visibility: visible; }
+.modal { background: var(--surface); border: 1px solid var(--border); border-radius: 20px; max-width: 700px; width: 100%; max-height: 90vh; overflow-y: auto; transform: scale(.95) translateY(16px); transition: transform .3s; box-shadow: 0 40px 80px rgba(0,0,0,.65); position: relative; }
+.modal-ov.open .modal { transform: scale(1) translateY(0); }
+.modal-x { position: absolute; top: 13px; right: 13px; width: 30px; height: 30px; background: var(--surface2); border: 1px solid var(--border); border-radius: 50%; color: var(--muted); font-size: 15px; cursor: pointer; display: flex; align-items: center; justify-content: center; z-index: 5; transition: all .2s; }
+.modal-x:hover { color: var(--text); }
+.modal-body { display: grid; grid-template-columns: 178px 1fr; gap: 24px; padding: 24px; }
+@media(max-width:560px) { .modal-body { grid-template-columns: 1fr; } }
+.modal-poster { width: 100%; border-radius: 11px; display: block; }
+.modal-title { font-family: 'Bebas Neue', sans-serif; font-size: 26px; letter-spacing: 2px; line-height: 1.1; margin-bottom: 8px; }
+.chips { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 12px; }
+.chip { padding: 3px 10px; background: var(--surface2); border: 1px solid var(--border); border-radius: 50px; font-size: 11px; color: var(--muted); font-family: 'Space Mono', monospace; }
+.chip.g { border-color: rgba(240,192,64,.3); color: var(--gold); background: rgba(240,192,64,.07); }
+.modal-plot { font-size: 13px; line-height: 1.75; color: #aab0c0; margin-bottom: 14px; }
+.modal-stars { display: flex; gap: 4px; margin-bottom: 13px; }
+.modal-star { font-size: 22px; cursor: pointer; color: var(--muted); transition: all .15s; user-select: none; }
+.modal-star:hover, .modal-star.lit { color: var(--gold); transform: scale(1.15); }
+.modal-actions { margin-bottom: 16px; }
+.modal-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.info-pair label { font-size: 10px; color: var(--muted); text-transform: uppercase; letter-spacing: 1px; display: block; }
+.info-pair p { font-size: 13px; margin-top: 2px; line-height: 1.4; }
+
+/* ── TOAST ── */
+#toast { position: fixed; bottom: 24px; right: 24px; background: var(--surface); border: 1px solid var(--border); border-radius: 11px; padding: 12px 18px; font-size: 14px; z-index: 9999; transform: translateY(16px); opacity: 0; transition: all .3s; pointer-events: none; max-width: 280px; box-shadow: 0 8px 24px rgba(0,0,0,.4); }
+#toast.show { opacity: 1; transform: translateY(0); }
+#toast.tg { border-color: rgba(240,192,64,.45); color: var(--gold); }
+#toast.tr { border-color: rgba(232,85,85,.45); color: var(--red); }
+#toast.tgn { border-color: rgba(74,222,128,.35); color: var(--green); }
+</style>
+</head>
+<body>
+
+<!-- ═══════════════ AUTH SCREEN ═══════════════ -->
+<div id="auth-screen">
+  <div class="auth-box">
+    <div class="auth-logo">🎬 CineVault</div>
+    <div class="auth-sub">Your Personal Movie Universe</div>
+    <div class="auth-tabs">
+      <button class="auth-tab on" id="tl" onclick="switchAuth('login')">Sign In</button>
+      <button class="auth-tab" id="ts" onclick="switchAuth('signup')">Create Account</button>
+    </div>
+    <!-- Login form -->
+    <div id="login-form">
+      <div class="fg"><label>Username</label><input id="l-user" type="text" placeholder="Enter username" autocomplete="username"></div>
+      <div class="fg"><label>Password</label><input id="l-pass" type="password" placeholder="Enter password" autocomplete="current-password"></div>
+      <button class="btn-gold" id="login-btn" onclick="doLogin()">Sign In →</button>
+      <div class="auth-msg" id="l-msg"></div>
+      <div class="demo-hint">Demo account: <b>demo / demo1234</b></div>
+    </div>
+    <!-- Signup form -->
+    <div id="signup-form" style="display:none">
+      <div class="fg"><label>Username</label><input id="s-user" type="text" placeholder="Min 3 characters, letters/numbers only"></div>
+      <div class="fg"><label>Password</label><input id="s-pass" type="password" placeholder="Min 6 characters"></div>
+      <button class="btn-gold" id="signup-btn" onclick="doSignup()">Create Account →</button>
+      <div class="auth-msg" id="s-msg"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════ MAIN APP ═══════════════ -->
+<div id="app">
+
+  <!-- HEADER -->
+  <header class="hdr">
+    <div class="hdr-logo" onclick="goHome()">Cine<span>Vault</span></div>
+    <div class="hdr-right">
+      <div class="user-pill">
+        <div class="user-av" id="u-av">U</div>
+        <span class="user-name" id="u-name">User</span>
+      </div>
+      <button class="btn-logout" onclick="doLogout()">Logout</button>
+    </div>
+  </header>
+
+  <!-- HERO SEARCH -->
+  <div class="hero">
+    <h1>DISCOVER YOUR NEXT<br><span>FAVOURITE FILM</span></h1>
+    <p>Search 500,000+ real movies — stored in your personal vault</p>
+    <div class="sbar">
+      <input type="text" id="search-input" placeholder="Search any movie..." onkeydown="if(event.key==='Enter')doSearch()">
+      <button onclick="doSearch()">Search</button>
+    </div>
+    <div class="quick-tags">
+      <span class="qtag" onclick="qs('Inception')">Inception</span>
+      <span class="qtag" onclick="qs('Batman')">Batman</span>
+      <span class="qtag" onclick="qs('Avengers')">Avengers</span>
+      <span class="qtag" onclick="qs('Joker')">Joker</span>
+      <span class="qtag" onclick="qs('Interstellar')">Interstellar</span>
+      <span class="qtag" onclick="qs('Oppenheimer')">Oppenheimer</span>
+    </div>
+  </div>
+
+  <!-- STATS BAR -->
+  <div class="stats-bar">
+    <div class="stat-item"><div class="stat-num" id="st-wl">0</div><div class="stat-label">Watchlist</div></div>
+    <div class="stat-item"><div class="stat-num" id="st-rt">0</div><div class="stat-label">Rated</div></div>
+    <div class="stat-item"><div class="stat-num" id="st-avg">—</div><div class="stat-label">Avg Rating</div></div>
+  </div>
+
+  <!-- NAVIGATION TABS -->
+  <nav class="nav-tabs">
+    <button class="ntab on" id="nt-discover" onclick="showTab('discover',this)">🎬 Discover</button>
+    <button class="ntab" id="nt-watchlist" onclick="showTab('watchlist',this)">❤️ Watchlist <span id="wl-badge"></span></button>
+    <button class="ntab" id="nt-rated" onclick="showTab('rated',this)">⭐ Rated</button>
+  </nav>
+
+  <div class="content">
+
+    <!-- DISCOVER TAB -->
+    <div class="tc on" id="tab-discover">
+      <div id="discover-body">
+        <div class="empty-state">
+          <div class="empty-icon">🔍</div>
+          <h3>Search for a Movie</h3>
+          <p>Type any movie title in the search bar above</p>
+        </div>
+      </div>
+      <div id="pagination"></div>
+    </div>
+
+    <!-- WATCHLIST TAB -->
+    <div class="tc" id="tab-watchlist">
+      <div class="sec-title">MY WATCHLIST</div>
+      <div id="watchlist-body">
+        <div class="empty-state"><div class="empty-icon">📋</div><h3>Watchlist Empty</h3><p>Add movies from the Discover tab</p></div>
+      </div>
+    </div>
+
+    <!-- RATED TAB -->
+    <div class="tc" id="tab-rated">
+      <div class="sec-title">MY RATINGS</div>
+      <div id="rated-body">
+        <div class="empty-state"><div class="empty-icon">⭐</div><h3>No Ratings Yet</h3><p>Rate movies in the Discover tab</p></div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ═══════════════ DETAIL MODAL ═══════════════ -->
+<div class="modal-ov" id="moverlay" onclick="if(event.target===this)closeModal()">
+  <div class="modal">
+    <button class="modal-x" onclick="closeModal()">&#x2715;</button>
+    <div class="modal-body" id="modal-body"></div>
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<script>
+// ══════════════════════════════════════════════════
+//  STATE
+// ══════════════════════════════════════════════════
+let TOKEN = localStorage.getItem('cv_token') || '';
+let USERNAME = localStorage.getItem('cv_user') || '';
+let SEARCH_RESULTS = [];
+let WATCHLIST = [];
+let RATINGS = [];
+let CUR_PAGE = 1;
+let LAST_QUERY = '';
+let TOTAL_RESULTS = 0;
+
+// ══════════════════════════════════════════════════
+//  API HELPER
+// ══════════════════════════════════════════════════
+async function api(method, path, body) {
+  const opts = {
+    method,
+    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${TOKEN}` }
+  };
+  if (body) opts.body = JSON.stringify(body);
+  const r = await fetch(path, opts);
+  const data = await r.json();
+  if (!r.ok) throw new Error(data.error || 'Request failed');
+  return data;
+}
+
+// ══════════════════════════════════════════════════
+//  AUTH
+// ══════════════════════════════════════════════════
+function switchAuth(tab) {
+  document.getElementById('tl').classList.toggle('on', tab==='login');
+  document.getElementById('ts').classList.toggle('on', tab==='signup');
+  document.getElementById('login-form').style.display = tab==='login'?'block':'none';
+  document.getElementById('signup-form').style.display = tab==='signup'?'block':'none';
+}
+
+async function doLogin() {
+  const user = document.getElementById('l-user').value.trim();
+  const pass = document.getElementById('l-pass').value;
+  const msg  = document.getElementById('l-msg');
+  const btn  = document.getElementById('login-btn');
+  msg.textContent = ''; msg.className = 'auth-msg';
+  if (!user || !pass) { msg.textContent = 'Please fill all fields.'; return; }
+  btn.disabled = true; btn.textContent = 'Signing in...';
+  try {
+    const d = await api('POST', '/api/login', { username: user, password: pass });
+    saveSession(d.token, d.username);
+    startApp();
+  } catch(e) {
+    msg.textContent = e.message;
+    btn.disabled = false; btn.textContent = 'Sign In →';
+  }
+}
+
+async function doSignup() {
+  const user = document.getElementById('s-user').value.trim();
+  const pass = document.getElementById('s-pass').value;
+  const msg  = document.getElementById('s-msg');
+  const btn  = document.getElementById('signup-btn');
+  msg.textContent = ''; msg.className = 'auth-msg';
+  if (!user || !pass) { msg.textContent = 'Please fill all fields.'; return; }
+  btn.disabled = true; btn.textContent = 'Creating account...';
+  try {
+    const d = await api('POST', '/api/register', { username: user, password: pass });
+    saveSession(d.token, d.username);
+    msg.className = 'auth-msg ok'; msg.textContent = 'Account created! Welcome!';
+    setTimeout(startApp, 600);
+  } catch(e) {
+    msg.textContent = e.message;
+    btn.disabled = false; btn.textContent = 'Create Account →';
+  }
+}
+
+function saveSession(token, username) {
+  TOKEN = token; USERNAME = username;
+  localStorage.setItem('cv_token', token);
+  localStorage.setItem('cv_user', username);
+}
+
+function doLogout() {
+  TOKEN = ''; USERNAME = '';
+  localStorage.removeItem('cv_token');
+  localStorage.removeItem('cv_user');
+  WATCHLIST = []; RATINGS = []; SEARCH_RESULTS = [];
+  document.getElementById('auth-screen').classList.remove('gone');
+  document.getElementById('app').classList.remove('on');
+  document.getElementById('l-user').value = '';
+  document.getElementById('l-pass').value = '';
+  document.getElementById('l-msg').textContent = '';
+  document.getElementById('login-btn').disabled = false;
+  document.getElementById('login-btn').textContent = 'Sign In →';
+}
+
+// ══════════════════════════════════════════════════
+//  APP STARTUP
+// ══════════════════════════════════════════════════
+async function startApp() {
+  document.getElementById('u-name').textContent = USERNAME;
+  document.getElementById('u-av').textContent   = USERNAME[0].toUpperCase();
+  document.getElementById('auth-screen').classList.add('gone');
+  document.getElementById('app').classList.add('on');
+  await loadUserData();
+}
+
+async function loadUserData() {
+  try {
+    [WATCHLIST, RATINGS] = await Promise.all([
+      api('GET', '/api/watchlist'),
+      api('GET', '/api/ratings')
+    ]);
+    updateStats();
+    updateWLBadge();
+  } catch(e) {
+    console.warn('Failed to load user data:', e.message);
+  }
+}
+
+async function refreshStats() {
+  try {
+    const s = await api('GET', '/api/stats');
+    document.getElementById('st-wl').textContent  = s.watchlistCount;
+    document.getElementById('st-rt').textContent  = s.ratedCount;
+    document.getElementById('st-avg').textContent = s.averageRating ? s.averageRating+'★' : '—';
+  } catch {}
+}
+
+function updateStats() {
+  document.getElementById('st-wl').textContent  = WATCHLIST.length;
+  document.getElementById('st-rt').textContent  = RATINGS.length;
+  const avg = RATINGS.length ? (RATINGS.reduce((a,r)=>a+r.rating,0)/RATINGS.length).toFixed(1) : null;
+  document.getElementById('st-avg').textContent = avg ? avg+'★' : '—';
+}
+
+function updateWLBadge() {
+  document.getElementById('wl-badge').textContent = WATCHLIST.length ? `(${WATCHLIST.length})` : '';
+}
+
+// ══════════════════════════════════════════════════
+//  TABS
+// ══════════════════════════════════════════════════
+function showTab(name, btn) {
+  document.querySelectorAll('.tc').forEach(t => t.classList.remove('on'));
+  document.querySelectorAll('.ntab').forEach(t => t.classList.remove('on'));
+  document.getElementById('tab-'+name).classList.add('on');
+  btn.classList.add('on');
+  if (name==='watchlist') renderWatchlist();
+  if (name==='rated') renderRated();
+}
+
+function goHome() {
+  document.querySelectorAll('.tc').forEach(t => t.classList.remove('on'));
+  document.querySelectorAll('.ntab').forEach(t => t.classList.remove('on'));
+  document.getElementById('tab-discover').classList.add('on');
+  document.getElementById('nt-discover').classList.add('on');
+}
+
+// ══════════════════════════════════════════════════
+//  SEARCH
+// ══════════════════════════════════════════════════
+async function doSearch(page) {
+  const q = document.getElementById('search-input').value.trim();
+  if (!q) { toast('Type a movie title to search', 'tr'); return; }
+  CUR_PAGE = page || 1;
+  LAST_QUERY = q;
+  goHome();
+  document.getElementById('discover-body').innerHTML = '<div class="loader-wrap"><div class="spinner"></div></div>';
+  document.getElementById('pagination').innerHTML = '';
+  try {
+    const d = await api('GET', `/api/search?q=${encodeURIComponent(q)}&page=${CUR_PAGE}`);
+    if (d.Response === 'True') {
+      SEARCH_RESULTS = d.Search;
+      TOTAL_RESULTS  = parseInt(d.totalResults);
+      renderResults(d.Search, q, d.totalResults);
+      renderPagination();
+    } else {
+      showEmpty(d.Error || 'No results found', `No movies matched "${q}". Try a different title.`);
+    }
+  } catch(e) {
+    showEmpty('Search Failed', e.message);
+  }
+}
+
+function qs(q) { document.getElementById('search-input').value = q; doSearch(); }
+function showEmpty(title, sub) { document.getElementById('discover-body').innerHTML = `<div class="empty-state"><div class="empty-icon">🎞️</div><h3>${title}</h3><p>${sub}</p></div>`; }
+
+function renderResults(movies, q, total) {
+  document.getElementById('discover-body').innerHTML =
+    `<p class="res-info">Results for "<b>${q}</b>" — ${total} movies found</p>`+
+    `<div class="mgrid">${movies.map((m,i)=>cardHTML(m,i)).join('')}</div>`;
+}
+
+function renderPagination() {
+  const pages = Math.ceil(TOTAL_RESULTS / 10);
+  if (pages <= 1) { document.getElementById('pagination').innerHTML = ''; return; }
+  const shown = [];
+  for (let p = 1; p <= pages && p <= 10; p++) shown.push(p);
+  document.getElementById('pagination').innerHTML =
+    `<div class="pagination">`+
+    (CUR_PAGE>1 ? `<button class="page-btn" onclick="doSearch(${CUR_PAGE-1})">← Prev</button>` : '')+
+    shown.map(p=>`<button class="page-btn${p===CUR_PAGE?' active':''}" onclick="doSearch(${p})">${p}</button>`).join('')+
+    (CUR_PAGE<pages && pages<=10 ? `<button class="page-btn" onclick="doSearch(${CUR_PAGE+1})">Next →</button>` : '')+
+    `</div>`;
+}
+
+// ══════════════════════════════════════════════════
+//  MOVIE CARDS
+// ══════════════════════════════════════════════════
+function escape2(s) { return (s||'').replace(/\\/g,'\\\\').replace(/'/g,"\\'").replace(/"/g,'&quot;'); }
+
+function cardHTML(m, i) {
+  const inWL  = WATCHLIST.some(w => w.imdb_id === m.imdbID);
+  const rObj  = RATINGS.find(r => r.imdb_id === m.imdbID);
+  const stars = starsHTML(m.imdbID, rObj ? rObj.rating : 0, false);
+  const hp    = m.Poster && m.Poster !== 'N/A';
+  return `<div class="mcard" style="animation-delay:${i*.04}s">
+    ${inWL ? '<div class="saved-badge">SAVED</div>' : ''}
+    <div class="mposter-wrap">
+      ${hp ? `<img class="mposter" src="${m.Poster}" alt="${escape2(m.Title)}" loading="lazy" onerror="this.style.display='none';this.nextSibling.style.display='flex'">
+              <div class="no-poster" style="display:none">🎬<small>No Image</small></div>`
+           : `<div class="no-poster">🎬<small>No Image</small></div>`}
+    </div>
+    <div class="cbody">
+      <div class="ctitle" title="${escape2(m.Title)}">${m.Title}</div>
+      <div class="cyear">${m.Year}</div>
+      <div class="cstars">${stars}</div>
+      <div class="cbtns">
+        ${inWL
+          ? `<button class="cb-rm"   onclick="removeWL('${m.imdbID}',event)">✕ Remove</button>`
+          : `<button class="cb-save" onclick="addWL('${m.imdbID}','${escape2(m.Title)}','${m.Year}','${escape2(m.Poster||'')}',event)">❤ Save</button>`}
+        <button class="cb-info" onclick="showDetail('${m.imdbID}',event)">Info</button>
+      </div>
+    </div>
+  </div>`;
+}
+
+function starsHTML(imdbID, current, large) {
+  return [1,2,3,4,5].map(n =>
+    `<span class="star${large?' modal-star':''} ${current>=n?'lit':''}" onclick="rateMovie('${imdbID}',${n},event)">&#9733;</span>`
+  ).join('');
+}
+
+// ══════════════════════════════════════════════════
+//  WATCHLIST
+// ══════════════════════════════════════════════════
+async function addWL(imdbID, title, year, poster, e) {
+  if (e) e.stopPropagation();
+  if (WATCHLIST.some(w => w.imdb_id === imdbID)) { toast('Already in watchlist', 'tg'); return; }
+  try {
+    await api('POST', '/api/watchlist', { imdb_id: imdbID, title, year, poster });
+    WATCHLIST.push({ imdb_id: imdbID, title, year, poster });
+    updateWLBadge(); updateStats();
+    toast(`Saved "${title}" ❤️`, 'tg');
+    refreshView();
+  } catch(e) { toast('Failed to save: '+e.message, 'tr'); }
+}
+
+async function removeWL(imdbID, e) {
+  if (e) e.stopPropagation();
+  const m = WATCHLIST.find(w => w.imdb_id === imdbID);
+  try {
+    await api('DELETE', `/api/watchlist/${imdbID}`);
+    WATCHLIST = WATCHLIST.filter(w => w.imdb_id !== imdbID);
+    updateWLBadge(); updateStats();
+    toast(m ? `Removed "${m.title}"` : 'Removed', 'tr');
+    refreshView(); renderWatchlist();
+  } catch(e) { toast('Failed: '+e.message, 'tr'); }
+}
+
+function renderWatchlist() {
+  const c = document.getElementById('watchlist-body');
+  if (!WATCHLIST.length) {
+    c.innerHTML = '<div class="empty-state"><div class="empty-icon">📋</div><h3>Watchlist Empty</h3><p>Save movies from the Discover tab</p></div>';
+    return;
+  }
+  c.innerHTML = WATCHLIST.map(m => {
+    const rObj = RATINGS.find(r => r.imdb_id === m.imdb_id);
+    const stars = rObj ? '★'.repeat(rObj.rating)+'☆'.repeat(5-rObj.rating) : 'Not rated';
+    const hp = m.poster && m.poster !== 'N/A';
+    return `<div class="wl-item">
+      ${hp ? `<img class="wl-thumb" src="${m.poster}" alt="${escape2(m.title)}" onerror="this.style.display='none'">` : '<div class="wl-no-img">🎬</div>'}
+      <div class="wl-info">
+        <div class="wl-title">${m.title}</div>
+        <div class="wl-year">${m.year}</div>
+        <div class="wl-rating">${stars}</div>
+      </div>
+      <div class="wl-btns">
+        <button class="btn-info-sm" onclick="showDetail('${m.imdb_id}',event)">Info</button>
+        <button class="btn-rm-sm"   onclick="removeWL('${m.imdb_id}',event)">Remove</button>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+// ══════════════════════════════════════════════════
+//  RATINGS
+// ══════════════════════════════════════════════════
+async function rateMovie(imdbID, stars, e) {
+  if (e) e.stopPropagation();
+  const found = SEARCH_RESULTS.find(m => m.imdbID === imdbID);
+  const payload = {
+    imdb_id: imdbID, rating: stars,
+    title:  found ? found.Title  : (WATCHLIST.find(w=>w.imdb_id===imdbID)||{}).title  || '',
+    year:   found ? found.Year   : (WATCHLIST.find(w=>w.imdb_id===imdbID)||{}).year   || '',
+    poster: found ? found.Poster : (WATCHLIST.find(w=>w.imdb_id===imdbID)||{}).poster || ''
+  };
+  try {
+    await api('POST', '/api/ratings', payload);
+    const idx = RATINGS.findIndex(r => r.imdb_id === imdbID);
+    if (idx>=0) RATINGS[idx].rating = stars;
+    else RATINGS.push({ imdb_id: imdbID, rating: stars, title: payload.title, year: payload.year, poster: payload.poster });
+    updateStats();
+    toast(`Rated ${'★'.repeat(stars)} (${stars}/5)`, 'tg');
+    refreshView();
+  } catch(e) { toast('Rating failed: '+e.message, 'tr'); }
+}
+
+function renderRated() {
+  const c = document.getElementById('rated-body');
+  if (!RATINGS.length) {
+    c.innerHTML = '<div class="empty-state"><div class="empty-icon">⭐</div><h3>No Ratings Yet</h3><p>Rate movies from the Discover tab</p></div>';
+    return;
+  }
+  c.innerHTML = `<div class="mgrid">${RATINGS.map((r,i) => {
+    const m = { imdbID: r.imdb_id, Title: r.title||r.imdb_id, Year: r.year||'', Poster: r.poster||'' };
+    return cardHTML(m, i);
+  }).join('')}</div>`;
+}
+
+// ══════════════════════════════════════════════════
+//  DETAIL MODAL
+// ══════════════════════════════════════════════════
+async function showDetail(imdbID, e) {
+  if (e) e.stopPropagation();
+  const ov = document.getElementById('moverlay');
+  document.getElementById('modal-body').innerHTML = '<div style="padding:60px;text-align:center;grid-column:1/-1"><div class="spinner" style="margin:auto"></div></div>';
+  ov.classList.add('open');
+  try {
+    const m = await api('GET', `/api/movie/${imdbID}`);
+    const inWL  = WATCHLIST.some(w => w.imdb_id === imdbID);
+    const rObj  = RATINGS.find(r => r.imdb_id === imdbID);
+    const mstars = [1,2,3,4,5].map(n =>
+      `<span class="modal-star ${rObj&&rObj.rating>=n?'lit':''}" onclick="rateMovie('${imdbID}',${n},event)">&#9733;</span>`
+    ).join('');
+    const hp = m.Poster && m.Poster !== 'N/A';
+    document.getElementById('modal-body').innerHTML = `
+      ${hp ? `<img class="modal-poster" src="${m.Poster}" alt="${escape2(m.Title)}">` : `<div class="no-poster" style="aspect-ratio:2/3;border-radius:11px">🎬</div>`}
+      <div>
+        <div class="modal-title">${m.Title}</div>
+        <div class="chips">
+          <span class="chip">${m.Year}</span>
+          ${m.Runtime&&m.Runtime!=='N/A'?`<span class="chip">${m.Runtime}</span>`:''}
+          ${m.Rated&&m.Rated!=='N/A'?`<span class="chip">${m.Rated}</span>`:''}
+          ${m.imdbRating&&m.imdbRating!=='N/A'?`<span class="chip g">★ ${m.imdbRating} IMDB</span>`:''}
+        </div>
+        <p class="modal-plot">${m.Plot || 'No description available.'}</p>
+        <div class="modal-stars">${mstars}</div>
+        <div class="modal-actions">
+          ${inWL
+            ? `<button class="cb-rm"   style="padding:9px 16px;font-size:13px;border-radius:8px" onclick="removeWL('${imdbID}',event)">✕ Remove from Watchlist</button>`
+            : `<button class="cb-save" style="padding:9px 16px;font-size:13px;border-radius:8px" onclick="addWL('${imdbID}','${escape2(m.Title)}','${m.Year}','${escape2(m.Poster||'')}',event)">❤ Save to Watchlist</button>`}
+        </div>
+        <div class="modal-grid">
+          <div class="info-pair"><label>Director</label><p>${m.Director||'N/A'}</p></div>
+          <div class="info-pair"><label>Genre</label><p>${m.Genre||'N/A'}</p></div>
+          <div class="info-pair"><label>Cast</label><p>${m.Actors||'N/A'}</p></div>
+          <div class="info-pair"><label>Language</label><p>${m.Language||'N/A'}</p></div>
+          <div class="info-pair"><label>Country</label><p>${m.Country||'N/A'}</p></div>
+          <div class="info-pair"><label>Box Office</label><p>${m.BoxOffice||'N/A'}</p></div>
+        </div>
+      </div>`;
+  } catch(e) {
+    document.getElementById('modal-body').innerHTML = `<p style="padding:40px;grid-column:1/-1;text-align:center;color:var(--muted)">Failed to load details.<br><small>${e.message}</small></p>`;
+  }
+}
+
+function closeModal() { document.getElementById('moverlay').classList.remove('open'); refreshView(); }
+
+function refreshView() {
+  const active = document.querySelector('.tc.on');
+  if (!active) return;
+  if (active.id==='tab-discover' && SEARCH_RESULTS.length) {
+    document.getElementById('discover-body').innerHTML =
+      `<p class="res-info">Results for "<b>${LAST_QUERY}</b>" — ${TOTAL_RESULTS} movies found</p>`+
+      `<div class="mgrid">${SEARCH_RESULTS.map((m,i)=>cardHTML(m,i)).join('')}</div>`;
+  }
+  if (active.id==='tab-watchlist') renderWatchlist();
+  if (active.id==='tab-rated') renderRated();
+}
+
+// ══════════════════════════════════════════════════
+//  TOAST
+// ══════════════════════════════════════════════════
+let _tTimer;
+function toast(msg, type) {
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.className = `show ${type||'tg'}`;
+  clearTimeout(_tTimer);
+  _tTimer = setTimeout(() => { t.className = ''; }, 2800);
+}
+
+// ══════════════════════════════════════════════════
+//  KEYBOARD SHORTCUTS
+// ══════════════════════════════════════════════════
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape') closeModal();
+  if (e.key === 'Enter') {
+    const auth = document.getElementById('auth-screen');
+    if (!auth.classList.contains('gone')) {
+      if (document.getElementById('login-form').style.display !== 'none') doLogin();
+      else doSignup();
+    }
+  }
+});
+
+// ══════════════════════════════════════════════════
+//  AUTO-LOGIN ON PAGE LOAD
+// ══════════════════════════════════════════════════
+window.addEventListener('load', async () => {
+  if (TOKEN && USERNAME) {
+    try {
+      await api('GET', '/api/me'); // verify token still valid
+      startApp();
+    } catch {
+      TOKEN = ''; USERNAME = '';
+      localStorage.removeItem('cv_token');
+      localStorage.removeItem('cv_user');
+    }
+  }
+});
+</script>
+</body>
+</html>

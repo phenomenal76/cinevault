@@ -1,0 +1,5 @@
+node_modules/
+.env
+cinevault.db
+*.db-shm
+*.db-wal
